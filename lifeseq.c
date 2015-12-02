@@ -21,7 +21,7 @@
   b2 = temp; \
 } while(0)
 
-#define BOARD( __board, __i, __j )  (__board[(__i) + LDA*(__j)])
+#define BOARD( __board, __i, __j )  (__board[LDA*(__i) + (__j)])
 
 #define NUM_THREADS 16
 #define BLOCK_SIZE 64
@@ -30,7 +30,7 @@ int nrows, ncols, LDA;
 char* outboard;
 char* inboard;
 int slice;
-
+int mask;
 
 void*
 parallel_run(void* args) {
@@ -39,50 +39,29 @@ parallel_run(void* args) {
   int rows_to = rows_from + slice;
   int i, j, ii, jj, inorth, isouth, jwest, jeast;
 
-      for (j = 0; j < ncols; j += BLOCK_SIZE) {
 
   for (i = rows_from; i < rows_to; i += BLOCK_SIZE) {
-      for (ii = i; ii < i + BLOCK_SIZE; ii++) {
-	if (ii-1 < 0)
-	  inorth = nrows;
-	else if (ii - 1 > nrows - 1)
-	  inorth = 0;
-	else
-	  inorth = ii - 1;
-
-	if (ii + 1 < 0)
-	  isouth = nrows;
-	else if (ii + 1 > nrows - 1)
-	  isouth = 0;
-	else
-	  isouth = ii + 1;
+for (j = 0; j < ncols; j += BLOCK_SIZE) {
+    for (ii = i; ii < i + BLOCK_SIZE; ii++) {
+	  inorth = (ii-1) & mask;
+	  isouth = (ii+1) & mask;
 	
 	  for (jj = j; jj < j + BLOCK_SIZE; jj++) {
-	    if (jj - 1 < 0)
-	      jwest = ncols;
-	    else if (jj - 1 > ncols - 1)
-	      jwest = 0;
-	    else
-	      jwest = jj - 1;
-
-	    if (jj + 1 < 0)
-	      jeast = ncols;
-	    else if (jj + 1 > ncols - 1)
-	      jeast = 0;
-	    else
-	      jeast = jj + 1;
+	    jwest = (jj-1) & mask;
+	    jeast = (jj+1) & mask;
 	    
                 const char neighbor_count =
                     BOARD (inboard, inorth, jwest) +
-		    BOARD (inboard, inorth, jj) +
-		    BOARD (inboard, inorth, jeast) +
+		    BOARD (inboard, i, jwest) +
 		    BOARD (inboard, isouth, jwest) +
-		    BOARD (inboard, isouth, jj) +
+                    BOARD (inboard, inorth, j) + 
+                    BOARD (inboard, i, jeast) +
 		    BOARD (inboard, isouth, jeast) +
-		    BOARD (inboard, ii, jwest) +
-                    BOARD (inboard, ii, jeast);
+		    BOARD (inboard, inorth, jeast) +
+                    BOARD (inboard, isouth, j);
 
-                BOARD(outboard, ii, jj) = alivep (neighbor_count, BOARD (inboard, ii, jj));
+                BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
+
 
             }
 	}
@@ -105,9 +84,9 @@ sequential_game_of_life (char* outboard_,
   inboard = inboard_;
   LDA = nrows;
   slice =  (nrows / NUM_THREADS);
+  mask = nrows - 1;
   
   if (nrows_ <= 32 && ncols_ <= 32) {
-    //const int LDA = nrows;
     int curgen, i, j;
 
     for (curgen = 0; curgen < gens_max; curgen++)
