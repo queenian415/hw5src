@@ -40,15 +40,16 @@ parallel_run(void* args) {
   int i, j, ii, jj, inorth, isouth, jwest, jeast;
 
 
-  for (i = rows_from; i < rows_to; i += BLOCK_SIZE) {
-for (j = 0; j < ncols; j += BLOCK_SIZE) {
-    for (ii = i; ii < i + BLOCK_SIZE; ii++) {
-	  inorth = (ii-1) & mask;
-	  isouth = (ii+1) & mask;
-	
-	  for (jj = j; jj < j + BLOCK_SIZE; jj++) {
-	    jwest = (jj-1) & mask;
-	    jeast = (jj+1) & mask;
+  for (i = rows_from; i < rows_to; i ++) {
+    for (j = 0; j < ncols; j ++) {
+
+      //for (ii = i; ii < i + BLOCK_SIZE; ii++) {
+	  inorth = (i-1) & mask;
+	  isouth = (i+1) & mask;
+	  //	  for (jj = j; jj < j + BLOCK_SIZE; jj++) {
+
+	    jwest = (j-1) & mask;
+	    jeast = (j+1) & mask;
 	    
                 const char neighbor_count =
                     BOARD (inboard, inorth, jwest) +
@@ -63,8 +64,8 @@ for (j = 0; j < ncols; j += BLOCK_SIZE) {
                 BOARD(outboard, i, j) = alivep (neighbor_count, BOARD (inboard, i, j));
 
 
-            }
-	}
+		// }
+		//	}
     }
   }
 }
@@ -85,6 +86,8 @@ sequential_game_of_life (char* outboard_,
   LDA = nrows;
   slice =  (nrows / NUM_THREADS);
   mask = nrows - 1;
+      pthread_t *thread = (pthread_t*)malloc(NUM_THREADS * sizeof(pthread_t));
+
   
   if (nrows_ <= 32 && ncols_ <= 32) {
     int curgen, i, j;
@@ -119,7 +122,6 @@ sequential_game_of_life (char* outboard_,
     }
   } else {
     int curgen, i;
-    pthread_t *thread = (pthread_t*)malloc(NUM_THREADS * sizeof(pthread_t));
 
     for (curgen = 0; curgen < gens_max; curgen++)
       {
