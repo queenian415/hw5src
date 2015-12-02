@@ -42,7 +42,8 @@ parallel_run(void* args) {
       for (j = 0; j < ncols; j += BLOCK_SIZE) {
 
   for (i = rows_from; i < rows_to; i += BLOCK_SIZE) {
-      for (ii = i; ii < i + BLOCK_SIZE; ii++) {
+
+    for (ii = i; ii < i + BLOCK_SIZE; ii++) {
 	if (ii-1 < 0)
 	  inorth = nrows;
 	else if (ii - 1 > nrows - 1)
